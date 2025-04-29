@@ -31,10 +31,10 @@ namespace APIDevSteam.Migrations
                     b.Property<DateTime?>("DataCriação")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("DataFinalização")
+                    b.Property<DateTime?>("DataFinalizacao")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool?>("Finalização")
+                    b.Property<bool?>("Finalizado")
                         .HasColumnType("bit");
 
                     b.Property<Guid?>("UsuarioId")
@@ -107,6 +107,9 @@ namespace APIDevSteam.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Preco")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PrecoOriginal")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Titulo")

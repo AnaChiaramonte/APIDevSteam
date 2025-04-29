@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using APIDevSteam.Data;
 using APIDevSteam.Models;
+using APIDevSteam.Data;
+using System.Security.Claims;
 
 namespace APIDevSteam.Controllers
 {
@@ -78,13 +80,12 @@ namespace APIDevSteam.Controllers
         [HttpPost]
         public async Task<ActionResult<Carrinho>> PostCarrinho(Carrinho carrinho)
         {
-            //Data e hora atual
-
+            //Data e Hora atual
             carrinho.DataCriação = DateTime.Now;
-            carrinho.DataFinalização = null;
-            carrinho.Finalização = false;//esperando para dar continuidade
+            carrinho.DataFinalizacao = null;
+            carrinho.Finalizado = false;
 
-            //Valor total inicial
+            //Valor total do carrinho
             carrinho.ValorTotal = 0;
 
             _context.Carrinhos.Add(carrinho);
@@ -112,6 +113,60 @@ namespace APIDevSteam.Controllers
         private bool CarrinhoExists(Guid id)
         {
             return _context.Carrinhos.Any(e => e.CarrinhoId == id);
+        }
+
+        [HttpPost]
+        [Route("FinalizarCompra/{id}")]
+        public async Task<IActionResult> FinalizarCompra(Guid id)
+        {
+            // Se carrinho de compra existe
+            var carrinho = await _context.Carrinhos.FindAsync(id);
+            if (carrinho == null)
+            {
+                return NotFound();
+            }
+
+            // Pegar o Id do IdentityUser logado a partir do token
+            var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (usuarioId == null)
+            {
+                return Unauthorized("Usuário não autenticado.");
+            }
+
+            // Verifica se o carrinho já foi finalizado
+            if (carrinho.Finalizado == true)
+            {
+                return BadRequest("Carrinho já foi finalizado.");
+            }
+
+            // Verifica se o carrinho está vazio
+            var itensCarrinho = await _context.ItensCarrinhos.Where(i => i.CarrinhoId == id).ToListAsync();
+            if (itensCarrinho.Count == 0)
+            {
+                return BadRequest("Carrinho vazio.");
+            }
+
+            // Calcula o valor total do carrinho
+            decimal valorTotal = 0;
+            foreach (var item in itensCarrinho)
+            {
+                var jogo = await _context.Jogos.FindAsync(item.JogoId);
+                if (jogo != null)
+                {
+                    valorTotal += jogo.Preco;
+                }
+            }
+
+            // Atualiza o carrinho
+            carrinho.Finalizado = true;
+            carrinho.DataFinalizacao = DateTime.Now;
+            carrinho.UsuarioId = Guid.Parse(usuarioId);
+            carrinho.ValorTotal = valorTotal;
+
+            _context.Entry(carrinho).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
     }
 }

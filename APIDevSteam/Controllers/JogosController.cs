@@ -54,7 +54,13 @@ namespace APIDevSteam.Controllers
             {
                 return BadRequest();
             }
-
+            //copiar o preço do jogo para preço original
+            jogo.PrecoOriginal = jogo.Preco;
+            //calcular o preço com desconto
+            if (jogo.Desconto > 0)
+            {
+                jogo.Preco = jogo.Preco - (jogo.Preco * (jogo.Desconto / 100));
+            }
             _context.Entry(jogo).State = EntityState.Modified;
 
             try
@@ -83,6 +89,13 @@ namespace APIDevSteam.Controllers
 
 
         {
+            //copiar o preço do jogo para preço original
+            jogo.PrecoOriginal = jogo.Preco;
+            //calcular o preço com desconto
+            if (jogo.Desconto > 0)
+            {
+                jogo.Preco = jogo.Preco - (jogo.Preco * (jogo.Desconto / 100));
+            }
             _context.Jogos.Add(jogo);
             await _context.SaveChangesAsync();
 
@@ -148,37 +161,25 @@ namespace APIDevSteam.Controllers
 
             return Ok(new { FilePath = relativePath });
         }
-
-
-        [HttpGet("GetBanner/{jogoId}")]
-        public async Task<IActionResult> GetBanner(Guid jogoId)
+        // [HttpPUT] : Remover um Desconto
+        [HttpPut("RemoverDesconto")]
+        public async Task<IActionResult> RemoverDesconto(Guid jogoId)
         {
+            // Verifica se o jogo existe
             var jogo = await _context.Jogos.FindAsync(jogoId);
             if (jogo == null)
                 return NotFound("Jogo não encontrado.");
 
-            var bannerFolder = Path.Combine(_webHostEnvironment.ContentRootPath, "Resources", "Banners");
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            // Remove o desconto
+            jogo.Desconto = 0;
+            jogo.Preco = (decimal)jogo.PrecoOriginal;
 
-            string? bannerPath = null;
-            foreach (var ext in allowedExtensions)
-            {
-                var potentialPath = Path.Combine(bannerFolder, $"{jogoId}{ext}");
-                if (System.IO.File.Exists(potentialPath))
-                {
-                    bannerPath = potentialPath;
-                    break;
-                }
-            }
-
-            if (bannerPath == null)
-                return NotFound("Banner não encontrado.");
-
-            var imageBytes = await System.IO.File.ReadAllBytesAsync(bannerPath);
-            var base64Image = Convert.ToBase64String(imageBytes);
-
-            return Ok(new { Base64Image = $"data:image/{Path.GetExtension(bannerPath).TrimStart('.')};base64,{base64Image}" });
+            // Atualiza o jogo no banco de dados
+            _context.Entry(jogo).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return Ok(jogo);
         }
+
 
     }
 }

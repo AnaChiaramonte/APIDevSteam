@@ -7,8 +7,8 @@
 
         public DateTime? DataCriação { get; set; }//histrico de pesquisa ou que ele ja adicionou ao carrinho
 
-        public bool? Finalização { get; set; } //se o carrinho foi finalizado ou não
-        public DateTime? DataFinalização { get; set; } //quando a compra for finalizada
+        public bool? Finalizado { get; set; } //se o carrinho foi finalizado ou não
+        public DateTime? DataFinalizacao { get; set; } //quando a compra for finalizada
         public decimal ValorTotal { get; set; } //valor total do carrinho
 
     }
